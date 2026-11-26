@@ -6,6 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#070b17">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>Disneyland Wait Times AR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -83,12 +86,22 @@ h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.015em; margin: 0 0 4p
 .mode[aria-pressed="true"] { border-color: var(--lantern); background: rgba(255,196,107,.09); }
 .mode input { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
 .rides { display: flex; flex-direction: column; gap: 8px; }
+.filters { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.filters input { width: 100%; border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--ink); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 16px; }
+.filters input::placeholder { color: var(--ink-dim); }
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.chips .chip { flex: none; font-family: var(--display); font-size: 12px; padding: 6px 11px; }
+.ride-row { display: grid; grid-template-columns: minmax(0,1fr) 40px; gap: 6px; align-items: stretch; }
+.star { border: 1px solid var(--line); background: rgba(255,255,255,.03); border-radius: 14px; font-size: 17px; color: var(--ink-dim); }
+.star[aria-pressed="true"] { color: var(--lantern); border-color: var(--lantern); background: rgba(255,196,107,.09); }
+.ride em.up { color: var(--off); } .ride em.down { color: var(--ok); }
+.empty { color: var(--ink-dim); font-size: 14px; padding: 14px 4px; }
 .ride { display: grid; grid-template-columns: 40px minmax(0,1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: rgba(255,255,255,.03); text-align: left; width: 100%; }
 .ride i { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-family: var(--mono); font-style: normal; color: #10131c; }
 .ride strong { display: block; font-size: 15px; }
 .ride span { display: block; font-size: 12px; color: var(--ink-dim); line-height: 1.35; }
 .ride em { font: 500 11px var(--mono); font-style: normal; color: var(--lantern); white-space: nowrap; }
-.callout { pointer-events: auto; display: grid; grid-template-columns: 46px minmax(0,1fr) auto auto; gap: 10px; align-items: center; width: min(100%, 460px); background: var(--glass-strong); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border: 1px solid var(--line); border-radius: 18px; padding: 8px 10px; }
+.callout { pointer-events: auto; display: grid; grid-template-columns: 46px minmax(0,1fr) auto auto auto; gap: 10px; align-items: center; width: min(100%, 460px); background: var(--glass-strong); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border: 1px solid var(--line); border-radius: 18px; padding: 8px 10px; }
 .callout[hidden] { display: none; }
 body:not(.split) #stamp { display: none; }
 .callout i { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font: 800 20px var(--display); font-style: normal; color: #10131c; font-variant-numeric: tabular-nums; }
@@ -139,6 +152,7 @@ body:not(.split) #stamp { display: none; }
   <div class="callout" id="callout" hidden>
     <i id="coWait">0</i>
     <div><strong id="coName"></strong><span id="coSub"></span></div>
+    <button id="coStar" aria-label="Favorite" aria-pressed="false">☆</button>
     <button id="coFly" aria-label="Fly to this attraction">Fly to</button>
     <button id="coClose" aria-label="Close">×</button>
   </div>
@@ -178,6 +192,10 @@ body:not(.split) #stamp { display: none; }
     <h2>Every line in the park</h2>
     <p id="waitSummary"></p>
     <p><span id="waitStamp"></span>. Tap a ride to fly to it. Data from <a href="https://queue-times.com" target="_blank" rel="noopener">Queue-Times.com</a>.</p>
+    <div class="filters">
+      <input type="search" id="q" placeholder="Search rides" aria-label="Search rides" autocomplete="off">
+      <div class="chips" id="landChips" role="toolbar" aria-label="Filter by land"></div>
+    </div>
     <div class="rides" id="rides"></div>
   </section>
 
@@ -779,6 +797,9 @@ function spawnBalloon(b, anywhere) { b.x = rand(-1.6, 1.6); b.z = rand(0.5, 8.5)
 const balloonData = Array.from({ length: BALLOONS }, (_, i) => { tc.setHex(PALETTE[i % PALETTE.length]); balloons.setColorAt(i, tc); return spawnBalloon({}, true); });
 
 /* ---------------------------------------------------------------- wait-time markers: a glowing beam and a number over every attraction */
+const norm = (n) => String(n).toLowerCase().replace(/[^a-z0-9]/g, '');
+const store = { get(k, d) { try { const v = localStorage.getItem('disneyar.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('disneyar.' + k, JSON.stringify(v)); } catch (e) {} } };
+const favs = new Set(store.get('favs', []));
 const waitHex = (r) => !r.open ? '#7d8494' : r.wait <= 15 ? '#5fe08a' : r.wait <= 30 ? '#ffd24a' : r.wait <= 45 ? '#ff9a3d' : '#ff5a5a';
 const beamGeo = new THREE.CylinderGeometry(0.022, 0.022, 1, 8); beamGeo.translate(0, 0.5, 0);
 const markerSprites = [];
@@ -789,6 +810,7 @@ function drawPill(r) {
   x.fillStyle = waitHex(r); x.textAlign = 'center'; x.textBaseline = 'middle';
   x.font = '800 54px "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif';
   x.fillText(r.open ? String(r.wait) : '–', 80, 51);
+  if (favs.has(norm(r.name))) { x.font = '26px system-ui, sans-serif'; x.fillStyle = '#ffc46b'; x.fillText('★', 134, 24); }
   r.tex.needsUpdate = true;
 }
 for (const r of RIDES) {
@@ -804,6 +826,21 @@ function refreshMarkers() {
   }
 }
 refreshMarkers(); document.fonts?.ready?.then(refreshMarkers);
+// land names float over each land and fade as you zoom in
+const landLabels = [];
+function drawLandLabels() {
+  LANDS.forEach((land, li) => {
+    if (land === 'Disneyland Railroad') return;
+    const rs = RIDES.filter((r) => r.land === land); const cx = rs.reduce((a, r) => a + r.x, 0) / rs.length, cz = rs.reduce((a, r) => a + r.z, 0) / rs.length;
+    let L = landLabels.find((l) => l.land === land);
+    if (!L) { const c = makeCanvas(512, 96); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, depthWrite: false, transparent: true })); sp.renderOrder = 15; sp.position.set(cx, 2.9, cz); sp.scale.set(3.4, 0.64, 1); park.add(sp); L = { land, c, t, sp }; landLabels.push(L); }
+    const label = land.toUpperCase().replace('STAR WARS: ', '');
+    const x = L.c.getContext('2d'); x.clearRect(0, 0, 512, 96); x.font = '800 44px "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.lineWidth = 9; x.strokeStyle = 'rgba(6,9,20,0.85)'; x.strokeText(label, 256, 50, 490); x.fillStyle = LAND_HEX[li]; x.fillText(label, 256, 50, 490); L.t.needsUpdate = true;
+  });
+}
+drawLandLabels(); document.fonts?.ready?.then(drawLandLabels);
 
 /* ---------------------------------------------------------------- particles (fireworks, sparks, fountain) */
 class Sparks {
@@ -1264,37 +1301,63 @@ $('#btnMotion').onclick = () => toggleMotion();
 $('#btnSound').onclick = () => audio.setOn(!audio.on);
 const ridesEl = $('#rides');
 let selected = null, waitsUpdated = SNAP_TIME;
-const norm = (n) => String(n).toLowerCase().replace(/[^a-z0-9]/g, '');
 const byName = new Map(RIDES.map((r) => [norm(r.name), r]));
 function stamp() { const d = new Date(waitsUpdated), ageH = (Date.now() - d) / 3600000; const when = d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); return `Wait times as of ${when}` + (ageH > 1.5 ? ` (${ageH < 48 ? Math.round(ageH) + ' h' : Math.round(ageH / 24) + ' days'} old)` : ''); }
+const filter = { q: '', land: 'All' };
+const trendOf = (r) => (r.open && r.prev != null && r.prev !== r.wait) ? r.wait - r.prev : 0;
+const trendText = (r) => { const d = trendOf(r); return d > 0 ? `▲ ${d}` : d < 0 ? `▼ ${-d}` : ''; };
 function showCallout(r) {
   const el = $('#callout'); if (!r) { el.hidden = true; return; }
-  el.hidden = false; const chip = $('#coWait'); chip.textContent = r.open ? r.wait : '\u2013'; chip.style.background = waitHex(r);
-  $('#coName').textContent = r.name; $('#coSub').textContent = `${r.land} \u00b7 ${r.open ? (r.wait ? r.wait + ' minute wait' : 'Open, no posted wait') : 'Closed right now'}`;
+  el.hidden = false; const chip = $('#coWait'); chip.textContent = r.open ? r.wait : '–'; chip.style.background = waitHex(r);
+  const d = trendOf(r);
+  $('#coName').textContent = r.name; $('#coSub').textContent = `${r.land} · ${r.open ? (r.wait ? r.wait + ' minute wait' : 'Open, no posted wait') : 'Closed right now'}` + (d ? ` · ${d > 0 ? 'up' : 'down'} ${Math.abs(d)} since last update` : '');
+  const on = favs.has(norm(r.name)); const st = $('#coStar'); st.textContent = on ? '★' : '☆'; st.setAttribute('aria-pressed', String(on));
 }
 function selectRide(r, fly) { selected = r; showCallout(r); if (r && fly) flyTo(r); if (r) buzz(8); }
+function toggleFav(r) { const k = norm(r.name); favs.has(k) ? favs.delete(k) : favs.add(k); store.set('favs', [...favs]); drawPill(r); renderGuide(); if (selected === r) showCallout(r); }
 $('#coClose').onclick = () => selectRide(null);
 $('#coFly').onclick = () => { if (selected) flyTo(selected); };
+$('#coStar').onclick = () => { if (selected) toggleFav(selected); };
+$('#q').addEventListener('input', (e) => { filter.q = e.target.value.trim().toLowerCase(); renderGuide(); });
+function renderChips() {
+  const el = $('#landChips'); el.textContent = '';
+  for (const name of ['All', '★ Favorites', ...LANDS]) {
+    const b = document.createElement('button'); b.className = 'chip'; b.textContent = name.replace('Star Wars: ', ''); b.setAttribute('aria-pressed', String(filter.land === name));
+    b.onclick = () => { filter.land = name; renderChips(); renderGuide(); }; el.append(b);
+  }
+}
 function renderGuide() {
   ridesEl.textContent = '';
   const sorted = [...RIDES].sort((a, b) => (b.open - a.open) || (b.wait - a.wait) || a.name.localeCompare(b.name));
-  for (const r of sorted) {
+  const shown = sorted.filter((r) => (filter.land === 'All' || (filter.land.includes('Favorites') ? favs.has(norm(r.name)) : r.land === filter.land)) && (!filter.q || r.name.toLowerCase().includes(filter.q) || r.land.toLowerCase().includes(filter.q)));
+  for (const r of shown) {
+    const row = document.createElement('div'); row.className = 'ride-row';
     const b = document.createElement('button'); b.className = 'ride';
-    const ic = document.createElement('i'); ic.style.background = waitHex(r); ic.textContent = r.open ? r.wait : '\u2013';
+    const ic = document.createElement('i'); ic.style.background = waitHex(r); ic.textContent = r.open ? r.wait : '–';
     const tx = document.createElement('div'); const st = document.createElement('strong'); st.textContent = r.name; const sp = document.createElement('span'); sp.textContent = r.land; tx.append(st, sp);
-    const em = document.createElement('em'); em.textContent = r.open ? 'min' : 'closed';
-    b.append(ic, tx, em); b.onclick = () => { selectRide(r, true); closeSheet(); }; ridesEl.append(b);
+    const em = document.createElement('em'); const d = trendOf(r); em.textContent = !r.open ? 'closed' : (trendText(r) || 'min'); if (d) em.className = d > 0 ? 'up' : 'down';
+    b.append(ic, tx, em); b.onclick = () => { selectRide(r, true); closeSheet(); };
+    const on = favs.has(norm(r.name)); const star = document.createElement('button'); star.className = 'star'; star.textContent = on ? '★' : '☆'; star.setAttribute('aria-pressed', String(on)); star.setAttribute('aria-label', (on ? 'Remove from' : 'Add to') + ' favorites: ' + r.name); star.onclick = () => toggleFav(r);
+    row.append(b, star); ridesEl.append(row);
   }
+  if (!shown.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = filter.land.includes('Favorites') && !filter.q ? 'No favorites yet. Tap the star next to a ride to keep it here.' : 'No rides match that.'; ridesEl.append(e); }
   const lined = RIDES.filter((r) => r.open && r.wait > 0), open = RIDES.filter((r) => r.open), top = sorted[0];
   const avg = lined.length ? Math.round(lined.reduce((a, r) => a + r.wait, 0) / lined.length) : 0;
-  $('#waitSummary').textContent = `Longest line: ${top.name}, ${top.wait} min. Average where there is a line: ${avg} min. ${open.length} of ${RIDES.length} attractions are open.`;
+  const favOpen = RIDES.filter((r) => r.open && favs.has(norm(r.name))).sort((a, b) => a.wait - b.wait)[0];
+  $('#waitSummary').textContent = `Longest line: ${top.name}, ${top.wait} min. Average where there is a line: ${avg} min. ${open.length} of ${RIDES.length} attractions are open.` + (favOpen ? ` Shortest wait among your favorites: ${favOpen.name}, ${favOpen.wait} min.` : '');
   $('#waitStamp').textContent = stamp(); $('#stamp').textContent = stamp();
 }
 function applyWaits(list, updated) {
+  // waits from the previous distinct update are kept across visits so each ride can show its trend
+  const last = store.get('last', null);
+  const prevMap = last && last.updated !== updated ? last.waits : store.get('prev', {});
   let n = 0;
-  for (const it of list) { const r = it && byName.get(norm(it.name)); if (!r) continue; r.open = !!it.open; r.wait = Math.max(0, Math.round(+it.wait || 0)); n++; }
-  if (!n) return; waitsUpdated = updated; refreshMarkers(); renderGuide(); if (selected) showCallout(selected);
+  for (const it of list) { const r = it && byName.get(norm(it.name)); if (!r) continue; r.open = !!it.open; r.wait = Math.max(0, Math.round(+it.wait || 0)); const p = prevMap[norm(r.name)]; r.prev = p == null ? null : p; n++; }
+  if (!n) return;
+  if (!last || last.updated !== updated) { if (last) store.set('prev', last.waits); store.set('last', { updated, waits: Object.fromEntries(RIDES.map((r) => [norm(r.name), r.wait])) }); }
+  waitsUpdated = updated; refreshMarkers(); renderGuide(); if (selected) showCallout(selected);
 }
+renderChips(); renderGuide();
 renderGuide();
 // live wait times: straight from Queue-Times when the browser allows it, otherwise the copy this site refreshes on a schedule
 function parseFeed(d) {
@@ -1449,6 +1512,7 @@ function update(dt) {
   // water
   M.water.normalMap.offset.set(t * 0.012, t * 0.008);
   _c.setRGB(0.5, 0.65, 0.8).multiplyScalar(lerp(0.5, 1.2, nightK)); sparks.emit(tianaSplash, _v.set(rand(-0.3, 0.3), rand(0.6, 1.1), rand(-0.3, 0.3)), _c, rand(0.4, 0.7), 0.035, 0.5, 1);
+  { const fade = clamp((orbit.dist - 9) / 6, 0, 1) * 0.9; for (const L of landLabels) { L.sp.material.opacity = fade; L.sp.visible = fade > 0.02; } }
   // wait markers keep a readable size at any zoom
   for (const r of RIDES) { const d = camera.position.distanceTo(r.sprite.position); const k = clamp(d / 20, 0.4, 1.5) * (r === selected ? 1.6 : 1); r.sprite.scale.set(0.62 * k, 0.37 * k, 1); r.beam.material.opacity = r === selected ? 1 : 0.7; }
   // guests

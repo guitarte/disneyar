@@ -1,0 +1,11 @@
+{
+  "name": "Disneyland Wait Times AR",
+  "short_name": "Park Waits AR",
+  "description": "Unofficial 3D AR fan map of Disneyland Park with current wait times.",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070b17",
+  "theme_color": "#070b17",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
