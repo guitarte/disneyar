@@ -15,6 +15,16 @@ Open the GitHub Pages URL on your phone. The live camera, gyroscope and location
 
 To run locally, serve the folder (for example `python3 -m http.server`) and open `http://localhost:8000`. Camera and motion sensors only work on `localhost` or HTTPS.
 
+## Features
+
+- 3D model of the park with a wait-time marker over every attraction
+- Guide with search, land filters, favorites and wait trends
+- Route planner: shortest walk through your favorites or the longest lines, drawn on the map
+- Low-wait alerts for starred rides while the page is open
+- "You are here" pin from GPS when you are in the park
+- AR backdrops: live camera, or a photo or video of your room
+- Day and night from the real sun position, fireworks, generated music
+
 ## Wait times
 
 The page first asks Queue-Times directly. If the browser blocks that request, it reads `waits.json`, which the workflow refreshes. If both fail it shows a built-in snapshot and labels how old it is.
