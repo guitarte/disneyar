@@ -27,8 +27,13 @@ jobs:
       - name: Build site folder
         run: |
           mkdir _site
-          cp index.html manifest.webmanifest icon.svg _site/
+          cp index.html manifest.webmanifest icon.svg sw.js _site/
           touch _site/.nojekyll
+      # Pages has to be switched on once in the repository settings (Settings > Pages > Source: GitHub Actions).
+      # Until then this job ends quietly with a notice, so the schedule does not send a failure email every 30 minutes.
+      - id: pages
+        uses: actions/configure-pages@v5
+        continue-on-error: true
       - name: Fetch current wait times from Queue-Times
         run: |
           if curl -fsS --max-time 30 -o _site/waits.json https://queue-times.com/parks/16/queue_times.json; then
@@ -37,11 +42,12 @@ jobs:
             echo "::warning::Could not fetch wait times; the page falls back to its built-in snapshot"
             rm -f _site/waits.json
           fi
-      # Pages has to be switched on once in the repository settings (Settings > Pages > Source: GitHub Actions).
-      # Until then this job ends quietly with a notice, so the schedule does not send a failure email every 30 minutes.
-      - id: pages
-        uses: actions/configure-pages@v5
-        continue-on-error: true
+      - name: Extend the rolling wait history
+        if: steps.pages.outcome == 'success'
+        run: |
+          # yesterday's samples live on the deployed site, so the history needs no commits
+          curl -fsS --max-time 20 -o prev-history.json "${{ steps.pages.outputs.base_url }}/history.json" || echo '{"samples":[]}' > prev-history.json
+          node scripts/history.mjs _site/waits.json prev-history.json _site/history.json
       - if: steps.pages.outcome != 'success'
         run: echo "::notice::GitHub Pages is not enabled for this repository yet, so nothing was deployed."
       - if: steps.pages.outcome == 'success'
