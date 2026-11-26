@@ -61,7 +61,7 @@ body.split .dock { right: var(--panel-w); }
 .chip[aria-pressed="true"] { color: #1a1206; background: var(--lantern); border-color: var(--lantern); }
 input[type=range] { flex: 1; min-width: 0; accent-color: var(--lantern); height: 28px; }
 .buttons { display: flex; gap: 2px; padding: 6px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-.buttons button { border: 0; background: transparent; border-radius: 13px; padding: 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 500; color: var(--ink-dim); min-width: 54px; flex: 1 0 auto; }
+.buttons button { border: 0; background: transparent; border-radius: 13px; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 500; color: var(--ink-dim); min-width: 46px; flex: 1 0 auto; }
 .buttons button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .buttons button:active { transform: scale(.95); }
 .buttons button[aria-pressed="true"], .buttons button.hot { color: var(--lantern); background: rgba(255,196,107,.1); }
@@ -74,7 +74,7 @@ body.split .sheet { top: 0; left: auto; width: var(--panel-w); max-height: none;
 .sheet .close { position: absolute; top: 12px; right: max(14px, env(safe-area-inset-right, 0px)); border: 0; background: rgba(255,255,255,.08); border-radius: 999px; width: 32px; height: 32px; font-size: 18px; line-height: 32px; }
 body.split .sheet .close { display: none; }
 .sec { display: none; }
-.sheet[data-view="view"] .sec-view, .sheet[data-view="guide"] .sec-guide, .sheet[data-view="sensors"] .sec-sensors { display: block; }
+.sheet[data-view="view"] .sec-view, .sheet[data-view="guide"] .sec-guide, .sheet[data-view="plan"] .sec-plan, .sheet[data-view="sensors"] .sec-sensors { display: block; }
 body.split .sec { display: block; margin-bottom: 26px; }
 h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.015em; margin: 0 0 4px; text-wrap: balance; }
 .sec > p { color: var(--ink-dim); font-size: 14px; line-height: 1.5; margin: 0 0 14px; max-width: 60ch; }
@@ -95,6 +95,18 @@ h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.015em; margin: 0 0 4p
 .star { border: 1px solid var(--line); background: rgba(255,255,255,.03); border-radius: 14px; font-size: 17px; color: var(--ink-dim); }
 .star[aria-pressed="true"] { color: var(--lantern); border-color: var(--lantern); background: rgba(255,196,107,.09); }
 .ride em.up { color: var(--off); } .ride em.down { color: var(--ok); }
+.planbtns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.planbtns .chip, .alertrow .chip { font-family: var(--display); font-size: 13px; padding: 8px 14px; color: var(--ink); }
+.steps { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 6px; counter-reset: step; }
+.steps li { display: grid; grid-template-columns: 28px minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.03); counter-increment: step; }
+.steps li::before { content: counter(step); width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: #6fd0ff; color: #06202e; font: 500 13px var(--mono); }
+.steps strong { display: block; font-size: 14px; font-weight: 500; }
+.steps span { display: block; font-size: 12px; color: var(--ink-dim); }
+.steps em { font: 500 12px var(--mono); font-style: normal; color: var(--ink-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.alertrow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; }
+.alertrow input[type=range] { flex: 1 1 140px; }
+.alertrow output { font: 500 13px var(--mono); min-width: 54px; }
+.sec h3 { font-size: 16px; font-weight: 700; margin: 22px 0 4px; }
 .empty { color: var(--ink-dim); font-size: 14px; padding: 14px 4px; }
 .ride { display: grid; grid-template-columns: 40px minmax(0,1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: rgba(255,255,255,.03); text-align: left; width: 100%; }
 .ride i { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-family: var(--mono); font-style: normal; color: #10131c; }
@@ -165,6 +177,7 @@ body:not(.split) #stamp { display: none; }
     <button id="btnView" class="panel-only"><svg viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M12 8l4 2.3v4.4L12 17l-4-2.3v-4.4z"/></svg>AR</button>
     <button id="btnFire"><svg viewBox="0 0 24 24"><path d="M12 21v-7M12 14l-4-4M12 14l4-4M12 10V3M7 5l1.5 1.5M17 5l-1.5 1.5M4 11h2M18 11h2"/></svg>Fireworks</button>
     <button id="btnMotion" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M3 9c-1 2-1 4 0 6M21 9c1 2 1 4 0 6"/></svg>Motion</button>
+    <button id="btnPlan" class="panel-only"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M8 17c5-1 2-9 8-10"/></svg>Plan</button>
     <button id="btnGuide" class="panel-only"><svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Guide</button>
     <button id="btnSensors" class="panel-only"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8.5 15.5a5 5 0 0 1 0-7M15.5 8.5a5 5 0 0 1 0 7M5.6 18.4a9 9 0 0 1 0-12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></svg>Sensors</button>
     <button id="btnSound" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>Sound</button>
@@ -197,6 +210,26 @@ body:not(.split) #stamp { display: none; }
       <div class="chips" id="landChips" role="toolbar" aria-label="Filter by land"></div>
     </div>
     <div class="rides" id="rides"></div>
+  </section>
+
+  <section class="sec sec-plan">
+    <div class="eyebrow">Route planner</div>
+    <h2>Plan a route</h2>
+    <p>Finds the shortest walk through the rides you pick and adds up the walking and the current waits. It starts from the main entrance, or from where you are if you are in the park.</p>
+    <div class="planbtns">
+      <button class="chip" id="planFav">Plan my favorites</button>
+      <button class="chip" id="planTop">Plan the 6 longest lines</button>
+      <button class="chip" id="planClear" hidden>Clear route</button>
+    </div>
+    <ol class="steps" id="planSteps"></ol>
+    <p class="readout" id="planTotal"></p>
+    <h3>Low-wait alerts</h3>
+    <p>Get a heads-up when one of your starred rides drops to a wait you choose. Alerts arrive while this page is open.</p>
+    <div class="alertrow">
+      <button class="chip" id="alertOn" aria-pressed="false">Alerts off</button>
+      <input type="range" id="alertThr" min="5" max="60" step="5" value="20" aria-label="Alert when the wait is at or below">
+      <output id="alertOut" for="alertThr">20 min</output>
+    </div>
   </section>
 
   <section class="sec sec-sensors">
@@ -1295,6 +1328,7 @@ function closeSheet() { sheet.classList.remove('open'); }
 $('#sheetClose').onclick = closeSheet;
 $('#btnView').onclick = () => openSheet('view');
 $('#btnGuide').onclick = () => openSheet('guide');
+$('#btnPlan').onclick = () => openSheet('plan');
 $('#btnSensors').onclick = () => openSheet('sensors');
 $('#btnFire').onclick = () => startFinale();
 $('#btnMotion').onclick = () => toggleMotion();
@@ -1356,8 +1390,81 @@ function applyWaits(list, updated) {
   if (!n) return;
   if (!last || last.updated !== updated) { if (last) store.set('prev', last.waits); store.set('last', { updated, waits: Object.fromEntries(RIDES.map((r) => [norm(r.name), r.wait])) }); }
   waitsUpdated = updated; refreshMarkers(); renderGuide(); if (selected) showCallout(selected);
+  if (plan.stops.length) setPlan(plan.stops, true); checkAlerts();
 }
 renderChips(); renderGuide();
+
+/* ---------------------------------------------------------------- route planner: shortest walk through the chosen rides */
+const UNIT_M = 40;            // one scene unit is about 40 m: the model is 20 units across and the park about 800 m
+const WALK_M_PER_MIN = 75, PATH_FACTOR = 1.3, RIDE_MIN = 5;
+const walkMin = (a, b) => Math.max(1, Math.round(Math.hypot(a.x - b.x, a.z - b.z) * UNIT_M * PATH_FACTOR / WALK_M_PER_MIN));
+const GATE = { x: 0, z: 8.4, name: 'the main entrance' };
+const me = { x: 0, z: 0, inPark: false, pin: null };
+const plan = { stops: [], curve: null, line: null, badges: [] };
+function orderStops(start, rides) {
+  let left = [...rides], cur = start; const out = [];
+  while (left.length) { left.sort((a, b) => Math.hypot(a.x - cur.x, a.z - cur.z) - Math.hypot(b.x - cur.x, b.z - cur.z)); cur = left.shift(); out.push(cur); }
+  const len = (o) => o.reduce((acc, r, i) => acc + Math.hypot(r.x - (i ? o[i - 1] : start).x, r.z - (i ? o[i - 1] : start).z), 0);
+  for (let pass = 0; pass < 4; pass++) for (let i = 0; i < out.length - 1; i++) for (let j = i + 1; j < out.length; j++) {   // 2-opt
+    const alt = out.slice(0, i).concat(out.slice(i, j + 1).reverse(), out.slice(j + 1)); if (len(alt) + 1e-6 < len(out)) out.splice(0, out.length, ...alt);
+  }
+  return out;
+}
+function clearRoute() { if (plan.line) { park.remove(plan.line); plan.line.geometry.dispose(); plan.line = null; } plan.badges.forEach((b) => { park.remove(b); b.material.map.dispose(); b.material.dispose(); }); plan.badges = []; plan.curve = null; }
+function setPlan(rides, keepOrder) {
+  clearRoute();
+  const start = me.inPark ? { x: me.x, z: me.z, name: 'where you are' } : GATE;
+  const open = rides.filter((r) => r.open); plan.stops = keepOrder ? open : orderStops(start, open);
+  const list = $('#planSteps'); list.textContent = ''; $('#planClear').hidden = !plan.stops.length;
+  if (!plan.stops.length) { $('#planTotal').textContent = ''; return; }
+  let walk = 0, wait = 0, prev = start;
+  plan.stops.forEach((r, i) => {
+    const w = walkMin(prev, r); walk += w; wait += r.wait; prev = r;
+    const li = document.createElement('li'); const d = document.createElement('div'); const st = document.createElement('strong'); st.textContent = r.name; const sp = document.createElement('span'); sp.textContent = `${w} min walk, then a ${r.wait} min wait`; d.append(st, sp);
+    const em = document.createElement('em'); em.textContent = `${w + r.wait + RIDE_MIN} min`; li.append(d, em); li.onclick = () => { selectRide(r, true); closeSheet(); }; list.append(li);
+    const c = makeCanvas(96, 96), x = c.getContext('2d'); x.fillStyle = '#6fd0ff'; x.beginPath(); x.arc(48, 48, 42, 0, TAU); x.fill(); x.fillStyle = '#06202e'; x.font = '800 54px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(i + 1), 48, 52);
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; const b = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, depthTest: false, depthWrite: false, transparent: true })); b.renderOrder = 21; b.position.set(r.x, r.top + 0.52, r.z); b.scale.setScalar(0.3); park.add(b); plan.badges.push(b);
+  });
+  const total = walk + wait + plan.stops.length * RIDE_MIN;
+  $('#planTotal').textContent = `From ${start.name}: about ${Math.floor(total / 60)} h ${total % 60} min in total. ${walk} min walking, ${wait} min in line, ${RIDE_MIN} min allowed per ride. Walking times are estimates from the map.`;
+  const pts = [start, ...plan.stops].map((p) => new THREE.Vector3(p.x, 0.09, p.z));
+  if (pts.length > 1) { plan.curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.08);
+    plan.line = new THREE.Mesh(new THREE.TubeGeometry(plan.curve, pts.length * 24, 0.03, 6, false), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.9, 2.4, 3.6), transparent: true, opacity: 0.85, depthTest: false, depthWrite: false })); plan.line.renderOrder = 10; park.add(plan.line); }
+}
+$('#planFav').onclick = () => { const f = RIDES.filter((r) => r.open && favs.has(norm(r.name))); if (f.length < 2) { toast('Star at least two open rides in the Guide first.'); return; } setPlan(f); toast(`Route through ${plan.stops.length} favorites drawn on the map.`); };
+$('#planTop').onclick = () => { setPlan([...RIDES].filter((r) => r.open).sort((a, b) => b.wait - a.wait).slice(0, 6)); toast('Route through the 6 longest lines drawn on the map.'); };
+$('#planClear').onclick = () => { plan.stops = []; setPlan([]); };
+
+/* low-wait alerts for starred rides */
+const alertCfg = store.get('alerts', { on: false, thr: 20 }); const alerted = new Set();
+function renderAlertUi() { const b = $('#alertOn'); b.textContent = alertCfg.on ? 'Alerts on' : 'Alerts off'; b.setAttribute('aria-pressed', String(alertCfg.on)); $('#alertThr').value = alertCfg.thr; $('#alertOut').textContent = `${alertCfg.thr} min`; }
+function checkAlerts() {
+  if (!alertCfg.on) return; const hits = [];
+  for (const r of RIDES) { const k = norm(r.name); if (!favs.has(k)) continue; const low = r.open && r.wait <= alertCfg.thr; if (low && !alerted.has(k)) { alerted.add(k); hits.push(r); } else if (!low) alerted.delete(k); }
+  if (!hits.length) return;
+  const msg = hits.length === 1 ? `${hits[0].name} is at ${hits[0].wait} min now.` : `${hits.length} favorites are at ${alertCfg.thr} min or less: ${hits.map((r) => `${r.name} (${r.wait})`).join(', ')}.`;
+  toast(msg, 7000); buzz([30, 60, 30]);
+  if (audio.on) { const t0 = audio.ctx.currentTime; audio.tone(880, t0, 0.5, 'sine', 0.12); audio.tone(1318.5, t0 + 0.14, 0.7, 'sine', 0.12); }
+  try { if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.hidden) new Notification('Disneyland Wait Times AR', { body: msg }); } catch (e) {}
+}
+$('#alertOn').onclick = () => { alertCfg.on = !alertCfg.on; store.set('alerts', alertCfg); renderAlertUi(); alerted.clear();
+  if (alertCfg.on) { try { if (typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); } catch (e) {}
+    if (![...favs].length) toast('Alerts are on. Star some rides in the Guide to watch them.'); else checkAlerts(); } };
+$('#alertThr').addEventListener('input', (e) => { alertCfg.thr = +e.target.value; store.set('alerts', alertCfg); renderAlertUi(); alerted.clear(); });
+renderAlertUi();
+
+/* "you are here": GPS mapped onto the model. The hub sits at about 33.8121 N, 117.9190 W and Main Street runs north. */
+const PARK_GEO = { lat: 33.8121, lon: -117.9190 };
+function setMe(lat, lon, acc) {
+  const x = (lon - PARK_GEO.lon) * Math.cos(lat * Math.PI / 180) * 111320 / UNIT_M, z = 1.5 - (lat - PARK_GEO.lat) * 110540 / UNIT_M;
+  const d = Math.hypot(x, z); me.inPark = d < 10.5; me.x = x; me.z = z;
+  if (me.inPark && !me.pin) { me.pin = new THREE.Group(); const dot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.5, 1.6, 4), depthTest: false })); dot.position.y = 0.3; dot.renderOrder = 22;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.2, 32), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.5, 1.6, 4), transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthTest: false })); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.03; ring.renderOrder = 22;
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.3, 6), dot.material); stem.position.y = 0.15; me.pin.add(dot, ring, stem); park.add(me.pin); }
+  if (me.pin) { me.pin.visible = me.inPark; me.pin.position.set(x, 0, z); }
+  const miles = d * UNIT_M / 1609.34;
+  setSensor('geo', 'ok', me.inPark ? `You are in the park: the blue pin shows roughly where (GPS is good to about ${Math.round(acc || 0)} m). Routes start from you.` : `Sun placed for ${lat.toFixed(1)}°, ${lon.toFixed(1)}°. You are about ${miles < 10 ? miles.toFixed(1) : Math.round(miles).toLocaleString()} miles from the park, so there is no "you are here" pin.`);
+}
 renderGuide();
 // live wait times: straight from Queue-Times when the browser allows it, otherwise the copy this site refreshes on a schedule
 function parseFeed(d) {
@@ -1401,8 +1508,8 @@ $('#goBtn').addEventListener('click', async () => {
   if (navigator.vibrate) { try { navigator.vibrate(15) ? setSensor('haptic', 'ok') : setSensor('haptic', 'no', 'The browser refused vibration.'); } catch (e) { setSensor('haptic', 'no'); } }
   else setSensor('haptic', 'no', 'iPhone Safari has no web vibration API, so taps are silent.');
   if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition((p) => { geo.lat = p.coords.latitude; geo.lon = p.coords.longitude; geo.real = true; skyEnvDirty = true; setSensor('geo', 'ok', `Sun placed for ${geo.lat.toFixed(1)}°, ${geo.lon.toFixed(1)}°.`); },
-      () => setSensor('geo', 'fb', `Location was not allowed. Sun is estimated from your clock and time zone (≈${geo.lat}°, ${geo.lon.toFixed(0)}°).`), { timeout: 6000, maximumAge: 600000 });
+    navigator.geolocation.watchPosition((p) => { geo.lat = p.coords.latitude; geo.lon = p.coords.longitude; if (!geo.real) skyEnvDirty = true; geo.real = true; setMe(geo.lat, geo.lon, p.coords.accuracy); },
+      () => { if (!geo.real) setSensor('geo', 'fb', `Location was not allowed. Sun is estimated from your clock and time zone (≈${geo.lat}°, ${geo.lon.toFixed(0)}°).`); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 });
   } else setSensor('geo', 'fb', 'Location is not available. Sun is estimated from your clock and time zone.');
   tryMic();
 });
@@ -1513,6 +1620,8 @@ function update(dt) {
   M.water.normalMap.offset.set(t * 0.012, t * 0.008);
   _c.setRGB(0.5, 0.65, 0.8).multiplyScalar(lerp(0.5, 1.2, nightK)); sparks.emit(tianaSplash, _v.set(rand(-0.3, 0.3), rand(0.6, 1.1), rand(-0.3, 0.3)), _c, rand(0.4, 0.7), 0.035, 0.5, 1);
   { const fade = clamp((orbit.dist - 9) / 6, 0, 1) * 0.9; for (const L of landLabels) { L.sp.material.opacity = fade; L.sp.visible = fade > 0.02; } }
+  if (plan.curve && Math.random() < 0.7) { _c.setRGB(1.5, 4, 6); sparks.emit(plan.curve.getPointAt((t * 0.06) % 1), _v.set(rand(-0.05, 0.05), rand(0.1, 0.3), rand(-0.05, 0.05)), _c, rand(0.4, 0.8), 0.05, 1, 0.1); }
+  if (me.pin && me.pin.visible) { const k = 1 + 0.5 * (0.5 + 0.5 * Math.sin(t * 4)); me.pin.children[1].scale.set(k, k, 1); }
   // wait markers keep a readable size at any zoom
   for (const r of RIDES) { const d = camera.position.distanceTo(r.sprite.position); const k = clamp(d / 20, 0.4, 1.5) * (r === selected ? 1.6 : 1); r.sprite.scale.set(0.62 * k, 0.37 * k, 1); r.beam.material.opacity = r === selected ? 1 : 0.7; }
   // guests
