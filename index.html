@@ -115,6 +115,9 @@ h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.015em; margin: 0 0 4p
 .ride em { font: 500 11px var(--mono); font-style: normal; color: var(--lantern); white-space: nowrap; }
 .callout { pointer-events: auto; display: grid; grid-template-columns: 46px minmax(0,1fr) auto auto auto; gap: 10px; align-items: center; width: min(100%, 460px); background: var(--glass-strong); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border: 1px solid var(--line); border-radius: 18px; padding: 8px 10px; }
 .callout[hidden] { display: none; }
+.hist { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding-top: 8px; }
+.hist svg { width: 100%; height: 34px; display: block; overflow: visible; }
+.hist span { font: 400 11px/1.35 var(--mono); color: var(--ink-dim); margin: 0; text-align: right; white-space: nowrap; }
 body:not(.split) #stamp { display: none; }
 .callout i { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font: 800 20px var(--display); font-style: normal; color: #10131c; font-variant-numeric: tabular-nums; }
 .callout strong { display: block; font-size: 15px; line-height: 1.2; }
@@ -167,6 +170,7 @@ body:not(.split) #stamp { display: none; }
     <button id="coStar" aria-label="Favorite" aria-pressed="false">☆</button>
     <button id="coFly" aria-label="Fly to this attraction">Fly to</button>
     <button id="coClose" aria-label="Close">×</button>
+    <div class="hist" id="coHist" hidden></div>
   </div>
   <div class="timebar">
     <button class="chip" id="liveBtn" aria-pressed="true">Live sun</button>
@@ -1346,6 +1350,41 @@ function showCallout(r) {
   const d = trendOf(r);
   $('#coName').textContent = r.name; $('#coSub').textContent = `${r.land} · ${r.open ? (r.wait ? r.wait + ' minute wait' : 'Open, no posted wait') : 'Closed right now'}` + (d ? ` · ${d > 0 ? 'up' : 'down'} ${Math.abs(d)} since last update` : '');
   const on = favs.has(norm(r.name)); const st = $('#coStar'); st.textContent = on ? '★' : '☆'; st.setAttribute('aria-pressed', String(on));
+  drawHistory(r);
+}
+// wait history: samples the site collects every 30 minutes, plus what this visit has seen
+let history = [];
+function drawHistory(r) {
+  const el = $('#coHist'), k = norm(r.name); el.textContent = '';
+  const cutoff = Date.now() - 24 * 3600000;
+  const pts = history.filter((s) => Date.parse(s.t) >= cutoff && s.w[k] != null).map((s) => ({ t: Date.parse(s.t), w: s.w[k] }));
+  const open = pts.filter((p) => p.w >= 0);
+  if (open.length < 3) { el.hidden = true; return; }
+  el.hidden = false;
+  const W = 300, H = 34, t0 = pts[0].t, t1 = pts[pts.length - 1].t, max = Math.max(20, ...open.map((p) => p.w));
+  const X = (t) => t1 === t0 ? W : (t - t0) / (t1 - t0) * W, Y = (w) => H - 3 - w / max * (H - 8);
+  const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('role', 'img');
+  let d = '', pen = false; for (const p of pts) { if (p.w < 0) { pen = false; continue; } d += `${pen ? 'L' : 'M'}${X(p.t).toFixed(1)} ${Y(p.w).toFixed(1)} `; pen = true; }   // closed stretches leave a gap
+  const base = document.createElementNS(NS, 'path'); base.setAttribute('d', `M0 ${H - 1} H${W}`); base.setAttribute('stroke', 'rgba(255,255,255,.14)'); base.setAttribute('fill', 'none');
+  const line = document.createElementNS(NS, 'path'); line.setAttribute('d', d); line.setAttribute('fill', 'none'); line.setAttribute('stroke', waitHex(r)); line.setAttribute('stroke-width', '2'); line.setAttribute('stroke-linejoin', 'round'); line.setAttribute('vector-effect', 'non-scaling-stroke');
+  const last = open[open.length - 1], dot = document.createElementNS(NS, 'circle'); dot.setAttribute('cx', X(last.t)); dot.setAttribute('cy', Y(last.w)); dot.setAttribute('r', 3); dot.setAttribute('fill', waitHex(r));
+  svg.append(base, line, dot);
+  const lo = Math.min(...open.map((p) => p.w)), hi = Math.max(...open.map((p) => p.w)), hours = Math.max(1, Math.round((t1 - t0) / 3600000));
+  svg.setAttribute('aria-label', `Wait over the last ${hours} hours: low ${lo}, high ${hi} minutes`);
+  const cap = document.createElement('span'); cap.textContent = `last ${hours} h\nlow ${lo} · high ${hi}`; cap.style.whiteSpace = 'pre';
+  el.append(svg, cap);
+}
+function noteSample(updated) {   // keep this visit's readings too, so the chart grows even between site refreshes
+  if (history.some((s) => s.t === updated)) return;
+  history.push({ t: updated, w: Object.fromEntries(RIDES.map((r) => [norm(r.name), r.open ? r.wait : -1])) }); history.sort((a, b) => a.t.localeCompare(b.t));
+  store.set('history', history.slice(-96));
+}
+async function loadHistory() {
+  const local = store.get('history', []); let remote = [];
+  try { const res = await fetch('history.json?t=' + Date.now(), { cache: 'no-store' }); if (res.ok) { const j = await res.json(); if (Array.isArray(j.samples)) remote = j.samples; } } catch (e) {}
+  const byT = new Map(); for (const s of [...local, ...remote, ...history]) if (s && s.t && s.w) byT.set(s.t, s);
+  history = [...byT.values()].sort((a, b) => a.t.localeCompare(b.t)).slice(-200);
+  if (selected) drawHistory(selected);
 }
 function selectRide(r, fly) { selected = r; showCallout(r); if (r && fly) flyTo(r); if (r) buzz(8); }
 function toggleFav(r) { const k = norm(r.name); favs.has(k) ? favs.delete(k) : favs.add(k); store.set('favs', [...favs]); drawPill(r); renderGuide(); if (selected === r) showCallout(r); }
@@ -1390,6 +1429,7 @@ function applyWaits(list, updated) {
   if (!n) return;
   if (!last || last.updated !== updated) { if (last) store.set('prev', last.waits); store.set('last', { updated, waits: Object.fromEntries(RIDES.map((r) => [norm(r.name), r.wait])) }); }
   waitsUpdated = updated; refreshMarkers(); renderGuide(); if (selected) showCallout(selected);
+  noteSample(updated);
   if (plan.stops.length) setPlan(plan.stops, true); checkAlerts();
 }
 renderChips(); renderGuide();
@@ -1485,7 +1525,8 @@ async function loadWaits() {
     } catch (e) {}
   }
 }
-loadWaits(); setInterval(loadWaits, 5 * 60 * 1000);
+loadWaits().then(loadHistory); setInterval(() => loadWaits().then(loadHistory), 5 * 60 * 1000);
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
 document.addEventListener('visibilitychange', () => { if (!document.hidden) loadWaits(); });
 const timeIn = $('#time'), timeOut = $('#timeOut'), liveBtn = $('#liveBtn');
 let live = true;

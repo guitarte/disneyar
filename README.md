@@ -8,6 +8,8 @@ Not affiliated with or endorsed by Disney. Wait times are powered by [Queue-Time
 
 - `index.html` is the whole app: one file, no build step. three.js loads from jsDelivr.
 - `.github/workflows/deploy.yml` publishes the site to GitHub Pages and refreshes `waits.json` from Queue-Times every 30 minutes.
+- `scripts/history.mjs` adds each refresh to a rolling 48-hour `history.json`. The previous history is read back from the live site, so nothing is committed.
+- `sw.js` caches the app and the last data for offline use.
 
 ## Running it
 
@@ -22,6 +24,8 @@ To run locally, serve the folder (for example `python3 -m http.server`) and open
 - Route planner: shortest walk through your favorites or the longest lines, drawn on the map
 - Low-wait alerts for starred rides while the page is open
 - "You are here" pin from GPS when you are in the park
+- Wait history chart for each ride over the last 24 hours
+- Works offline with the last wait times it saw
 - AR backdrops: live camera, or a photo or video of your room
 - Day and night from the real sun position, fireworks, generated music
 
